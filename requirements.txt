@@ -1,9 +1,6 @@
 flask==3.0.3
 flask-cors==4.0.1
 anthropic>=0.34.0
-pymupdf>=1.24.0
-pytesseract>=0.3.10
-Pillow>=10.0.0
-gdown>=5.1.0
 requests>=2.31.0
+gdown>=5.1.0
 gunicorn>=21.2.0

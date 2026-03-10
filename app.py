@@ -1,8 +1,7 @@
 """
-app.py — RAG Chatbot for Hugging Face Spaces
-Fixes:
-  1. Static file 404 — serves index.html from correct path
-  2. Memory OOM — uses HF Inference API for embeddings instead of local model
+app.py — RAG Chatbot for Render.com
+Pre-indexed: loads rag_store.json from Drive or local file.
+Zero PDF processing on server — fast cold start, low memory.
 """
 
 import os, re, json, time, threading, hashlib, requests
@@ -160,19 +159,43 @@ def build_index():
     else:
         log(f"  ℹ️  Already indexed ({len(existing)} chunks)")
 
-# ── Startup ───────────────────────────────────────────────────────────────────
+# ── Startup — loads pre-built index, no PDF processing ───────────────────────
+GDRIVE_STORE_ID = os.environ.get("GDRIVE_STORE_FILE_ID", "")  # optional: Drive file ID of rag_store.json
+
 def startup():
     global ready
-    log("🚀 Starting RAG pipeline...")
-    log("\n📥 Step 1/3 — Downloading PDFs...")
-    download_all_pdfs()
-    log("\n📄 Step 2/3 — Parsing & embedding PDFs...")
-    build_index()
-    docs  = load_store()
-    files = sorted({d["source"] for d in docs})
-    log(f"\n✅ Ready! {len(docs)} chunks from {len(files)} doc(s):")
-    for f in files: log(f"   • {f}")
-    ready = True
+    log("🚀 Loading pre-built RAG index...")
+
+    # Option A: rag_store.json already committed in repo (fastest)
+    if os.path.exists(STORE_PATH) and os.path.getsize(STORE_PATH) > 100:
+        docs  = load_store()
+        files = sorted({d["source"] for d in docs})
+        log(f"✅ Loaded {len(docs)} chunks from {len(files)} doc(s):")
+        for f in files: log(f"   • {f}")
+        ready = True
+        return
+
+    # Option B: download rag_store.json from Google Drive
+    if GDRIVE_STORE_ID:
+        log("  Downloading rag_store.json from Google Drive...")
+        try:
+            import gdown
+            gdown.download(
+                url=f"https://drive.google.com/uc?id={GDRIVE_STORE_ID}",
+                output=STORE_PATH, quiet=False)
+            docs  = load_store()
+            files = sorted({d["source"] for d in docs})
+            log(f"✅ Loaded {len(docs)} chunks from {len(files)} doc(s):")
+            for f in files: log(f"   • {f}")
+            ready = True
+            return
+        except Exception as e:
+            log(f"  ❌ Failed to download store: {e}")
+
+    log("❌ No rag_store.json found!")
+    log("   Run index_local.py on your computer first,")
+    log("   then commit rag_store.json to your GitHub repo.")
+    ready = False
 
 threading.Thread(target=startup, daemon=True).start()
 
