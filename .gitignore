@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.env
+venv/
+.venv/
+
+# RAG data (regenerated at startup — don't commit large files)
+rag_pdfs/
+rag_store.json
+
+# OS
+.DS_Store
+Thumbs.db

@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: n8n-rag-chatbot
+    runtime: python
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "gunicorn app:app --bind 0.0.0.0:$PORT --workers 1 --timeout 120"
+    envVars:
+      - key: ANTHROPIC_API_KEY
+        sync: false          # set manually in Render dashboard
+      - key: GDRIVE_FOLDER_ID
+        value: 1vfPGyeDHCWz8wMQumz_XQMoQVzFSf8Cw
+      - key: PYTHON_VERSION
+        value: 3.11.0
+    healthCheckPath: /health
